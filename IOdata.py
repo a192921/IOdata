@@ -17,10 +17,6 @@ import os
 import asyncio
 from pyppeteer import launch
 
-# from PyQt5.QtGui import *
-# from PyQt5.QtWidgets import *
-# from PyQt5.QtCore import *
-# from test import DateTimeEditDemo
 
 global data, search_data
 global path1, file_input, file_input_path
@@ -63,6 +59,10 @@ def Dataloader(path1, file_input_path):
     # df_removenan.astype({'date':"datetime64[ns]"})
     # df_removenan['date'] = pd.to_datetime(df_removenan['date'])
     # df_removenan['date'] =df_removenan['date'].dt.strftime('%Y-%m-%d')
+    df_removenan['id'] = df_removenan['id'].astype(str) 
+    df_removenan['company'] = df_removenan['company'].astype(str) 
+    df_removenan['description'] = df_removenan['description'].astype(str) 
+
     return df_removenan
     
 data = Dataloader(path1, file_input_path)
@@ -92,20 +92,29 @@ class initface():
             widget.destroy()
         self.master = master
         data = Dataloader(path1, file_input_path)
+        search_data = data
         # 基准界面initface
         self.initface = tk.Frame(self.master, )
         self.initface.pack()
+
         menubar = tk.Menu(root)
-       
-        editmenu = tk.Menu(menubar, tearoff=False)
-        editmenu.add_command(label="查詢進貨資料", command= self._page_search)
-        editmenu.add_command(label="新增進貨資料", command= self._page_add)
-        editmenu.add_command(label="離開", command=root.quit)
-        menubar.add_cascade(label="選擇模式（查詢/新增與刪除）", menu=editmenu)
+        menubar_input = tk.Menu(menubar, tearoff=False)
+        menubar_input.add_command(label="查詢進貨資料", command= self._page_search)
+        menubar_input.add_command(label="新增材料進貨資料", command= self._page_add)
+        menubar_input.add_command(label="離開", command=root.quit)
+        menubar.add_cascade(label="進貨（查詢/新增與刪除）", menu=menubar_input)
+        menubar_output = tk.Menu(menubar, tearoff=False)
+        menubar_output.add_command(label="查詢進貨資料", command= self._page_search)
+        menubar_output.add_command(label="新增材料進貨資料", command= self._page_add)
+        menubar_output.add_command(label="離開", command=root.quit)
+        menubar.add_cascade(label="出貨（查詢/新增與刪除）", menu=menubar_output)
+
         root.config(menu = menubar)
-        
+
+
         frame_all = tk.Frame(root, borderwidth=2, relief="groove")
         frame_all.pack(ipadx=5, ipady=5,padx=10, pady=10, fill='x')
+       
         frame_fix = tk.Frame(frame_all)
         frame_fix.pack(ipady=2,padx=2, pady=5, fill='x')
 
@@ -115,15 +124,16 @@ class initface():
         name = ['編號', '寶號','品名', '數量', '單價', '金額','日期','備註']
         # print(len(name)) #10
         
+        
         # orderid
         lab_orderid  = tk.Label(frame_fix, text=name[0]+str(": "), font=("Helvetica",18))
         lab_orderid.pack(side='left', anchor='nw',pady=1,padx=2)
-        txtbox_orderid = tk.Text(frame_fix, font=("Helvetica",18), background='white',border=2,height=1, width=15)
+        txtbox_orderid = tk.Entry(frame_fix, font=("Helvetica",18), background='white', width=20)
         txtbox_orderid.pack(side='left',anchor='nw',pady=1,padx=1,expand=1)
         # company
         lab_company  = tk.Label(frame_fix, text=name[1]+str(": "), font=("Helvetica",18))
         lab_company.pack(side='left', anchor='nw',pady=1,padx=2)
-        txtbox_company = tk.Text(frame_fix, font=("Helvetica",18), background='white',height=1, width=30)
+        txtbox_company = tk.Entry(frame_fix, font=("Helvetica",18), background='white', width=30)
         txtbox_company.pack(side='left',anchor='nw',pady=1,padx=1,expand=1)
 
         frame_choose = tk.Frame(frame_all)
@@ -131,7 +141,7 @@ class initface():
         # description
         lab_description  = tk.Label(frame_choose, text=name[2]+str(": "), font=("Helvetica",18))
         lab_description.pack(side='left',anchor='nw',pady=1,padx=1,expand=0)
-        txtbox_description = tk.Text(frame_choose, font=("Helvetica",18), background='white',height=1, width=30)
+        txtbox_description = tk.Entry(frame_choose, font=("Helvetica",18), background='white', width=20)
         txtbox_description.pack(side='left',anchor='nw',pady=1,padx=1,expand=1)
         # quantity
         #Create a Calendar using DateEntry
@@ -144,17 +154,10 @@ class initface():
         cal_end = DateEntry(frame_choose,bootstyle='primary',font=('Helvetica',18))
         cal_end.pack(side='left',anchor='nw',pady=1,padx=1,expand=1)
 
-
-
-
-        # app = QApplication(sys.argv)
-        # demo = DateTimeEditDemo()
-        # demo.show()
-        # sys.exit(app.exec_())
-
         # btn_PDF=tk.Button(frame_choose,text='另存資料(備份)',font=('Helvetica',18), fg='black',width=10,borderwidth=2,command=lambda:research())
-        # btn_PDF.pack(ipadx=30,padx=20,pady=5, ipady=10, side='right',anchor='e',expand=0)
-
+        # btn_PDF.pack(ipadx=30,padx=20,pady=1, ipady=5, side='right',anchor='e',expand=0)
+        # btn_PDF=tk.Button(frame_choose,text='另存資料(備份)',font=('Helvetica',18), fg='black',width=10,borderwidth=2,command=lambda:research())
+        # btn_PDF.pack(ipadx=30,padx=20,pady=1, ipady=5, side='right',anchor='e',expand=0)
 
         frame_search_mode = tk.Frame(frame_all)
         frame_search_mode.pack(ipady=2,padx=2, pady=5, fill='x')
@@ -162,30 +165,36 @@ class initface():
         mylabel = tk.Label(frame_search_mode, font=('Arial',30), fg='#f00')  # 放入標籤
         mylabel.pack(side='left')
             
-        val_id = tk.BooleanVar()
-        check_btn_ID = tk.Checkbutton(frame_search_mode, text='依編號查詢', variable=val_id, onvalue=bool(True), 
-                                      offvalue=bool(False), state=tk.DISABLED)
+        val_id = tk.IntVar(value=0)
+     
+        check_btn_ID = tk.Checkbutton(frame_search_mode, text='依編號查詢', variable=val_id, 
+                                      onvalue=1, 
+                                      offvalue=0)
         check_btn_ID.pack(side='left',anchor='w',pady=1,padx=1,expand=0)
-        check_btn_ID.deselect()
         
-        val_company = tk.StringVar()
-        check_btn_company = tk.Checkbutton(frame_search_mode, text='依寶號查詢', variable=val_company, onvalue='company',
-                                           offvalue='', state=tk.DISABLED)
+        
+        val_company =  tk.IntVar(value=0)
+        check_btn_company = tk.Checkbutton(frame_search_mode, text='依寶號查詢', variable=val_company, 
+                                           onvalue=1,
+                                           offvalue=0)
         check_btn_company.pack(side='left',anchor='w',pady=1,padx=1,expand=0)
-        check_btn_company.deselect()
+
         
-        val_description = tk.StringVar()
-        check_btn_description = tk.Checkbutton(frame_search_mode, text='依品名查詢', variable=val_description, onvalue='description', 
-                                               offvalue='', state=tk.DISABLED)
+        val_description = tk.IntVar(value=0)
+        check_btn_description = tk.Checkbutton(frame_search_mode, text='依品名查詢', variable=val_description, 
+                                               onvalue=1, 
+                                               offvalue=0)
         check_btn_description.pack(side='left',anchor='w',pady=1,padx=1,expand=0)
-        check_btn_description.deselect()
-        
-        val_time = tk.StringVar()
-        check_btn_time = tk.Checkbutton(frame_search_mode, text='依時間查詢', variable=val_time, onvalue='time',
-                                        offvalue='')
-        check_btn_time.select()
+
+
+        val_time = tk.IntVar(value=1)
+        check_btn_time = tk.Checkbutton(frame_search_mode, text='依時間查詢', 
+                                        variable=val_time, 
+                                        onvalue=1, offvalue=0)
         check_btn_time.pack(side='left',anchor='w',pady=1,padx=1,expand=0)
-        
+
+
+
         
         btn_search = tk.Button(frame_search_mode,
                         text='查詢',
@@ -193,22 +202,36 @@ class initface():
                     )
         btn_search.pack(ipadx=60,padx=20,pady=20, ipady=10,side='left',expand=0)
         
+        ######## 資料查詢 ########
         def cal_search_data():
             global search_data
-            search_data_start_date = cal_start.get()
-            search_data_end_date =  cal_end.get()
-            # print(search_data_start_date)
-            # print(search_data_end_date)
+            search_data = data
+            if (val_time.get()==1):
+                print("search by time")
+                search_data_start_date = cal_start.get()
+                search_data_end_date =  cal_end.get()
+                # Convert the date to datetime64
+                # data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
+                data['date'] = pd.to_datetime(data['date'],format='mixed', dayfirst=True)
+                # Filter data between two dates
+                search_data = search_data.loc[(data['date'] >= search_data_start_date) & (data['date'] <= search_data_end_date)]
             
-            # Convert the date to datetime64
-            # data['date'] = pd.to_datetime(data['date'], format='%Y-%m-%d')
-            data['date'] = pd.to_datetime(data['date'],format='mixed', dayfirst=True)
-            
+            if val_id.get()==1:
+                print("search by id")
+                search_data_id = txtbox_orderid.get()
+                search_data = search_data.loc[search_data["id"].str.contains(search_data_id)]
 
-            # Filter data between two dates
-            search_data = data.loc[(data['date'] >= search_data_start_date) & (data['date'] <= search_data_end_date)]
-            # print(search_data)
-            
+            if val_company.get()==1:
+                print("search by company")
+                search_data_company = txtbox_company.get()
+                search_data = search_data.loc[search_data["company"].str.contains(search_data_company)]
+
+
+            if val_description.get()==1:
+                print("search by description")
+                search_data_description = txtbox_description.get()
+                search_data = search_data.loc[search_data["description"].str.contains(search_data_description)]
+
             for i in tree.get_children():
                 tree.delete(i)
             search_data_list = search_data.to_numpy().tolist()
@@ -378,14 +401,14 @@ class face1():
         menubar = tk.Menu(root)
         editmenu = tk.Menu(menubar, tearoff=False)
         editmenu.add_command(label="查詢進貨資料", command= self._page_search)
-        editmenu.add_command(label="新增進貨資料", command= self._page_add)
+        editmenu.add_command(label="新增材料進貨資料", command= self._page_add)
         editmenu.add_command(label="離開", command=root.quit)
         menubar.add_cascade(label="選擇模式（查詢/新增與刪除）",font=("Helvetica",24), menu=editmenu)
         root.config(menu = menubar)
         
         frame_add_fix = tk.Frame(root)
         frame_add_fix.pack()
-        label_add_fix = tk.Label(frame_add_fix, text='新增進貨資料', font=("Helvetica",28))
+        label_add_fix = tk.Label(frame_add_fix, text='新增材料進貨資料', font=("Helvetica",28))
         label_add_fix.pack(anchor="center",pady=10,padx=10)
         
         frame_add_table = tk.Frame(root)
@@ -401,8 +424,7 @@ class face1():
         tree.column('6', anchor='w')
         tree.column('7', anchor='w')
         
-        # tree.tag_configure('+', background='red')
-        # tree.tag_configure('-', background='green')
+
         tree.heading('0', text='#')
         tree.heading('1', text='日期')
         tree.heading('2', text='寶號')
@@ -513,52 +535,60 @@ class face1():
 
     
         
-        frame_add_change = tk.Frame(root,height=20)
-        frame_add_change.pack(padx=10,fill='both')
+        frame_add_change = tk.Frame(root, height=20)
+        frame_add_change.pack(padx=10,fill='x')
+        frame_add_change_item = tk.Frame(root, height=20)
+        frame_add_change_item.pack(padx=10,fill='x')
         
         lbl_date = tk.Label(frame_add_change,font=('Arial', 14), text="日期:", fg="green")
         lbl_date.pack(side='left',expand=0, anchor='w')
-        # cal_input = DateEntry(frame_add_change,
-        #         fieldbackground='light green',
-        #         background='dark green',
-        #         foreground='dark blue',
-        #         arrowcolor='white')
         cal_input = DateEntry(frame_add_change,bootstyle='primary',font=('Arial', 14))
-        cal_input.pack(side='left',padx=10, pady=10, expand=1, anchor='w')
-        # cal = DateEntry(frame_choose, width= 16, background= "magenta3", foreground= "gray",bd=2)
-        # cal.pack(side='left',anchor='nw',pady=1,padx=1,expand=0)
-        # txt_input_date = tk.Entry(frame_add_change, width=10)
-        # txt_input_date.pack(side='left', expand=1, anchor='w')
+        cal_input.pack(side='left',padx=10, pady=10, expand=0, anchor='w')
+
         
         lbl_company = tk.Label(frame_add_change,font=('Arial', 14), text="寶號:", fg="green")
         lbl_company.pack(side='left',expand=0, anchor='w')
-        txt_input_company = tk.Entry(frame_add_change,font=('Arial', 14))
+        txt_input_company = tk.Entry(frame_add_change,font=('Arial', 14), width=30)
         txt_input_company.pack(side='left', expand=1, anchor='w')
         
-        lbl_description = tk.Label(frame_add_change,font=('Arial', 14), text="品名:", fg="black")
-        lbl_description.pack(side='left',expand=0, anchor='w')
-        txt_input_description = tk.Entry(frame_add_change,font=('Arial', 14))
-        txt_input_description.pack(side='left', expand=1, anchor='w')
-        
-        lbl_quantity = tk.Label(frame_add_change,font=('Arial', 14), text="數量:", fg="black")
-        lbl_quantity.pack(side='left',expand=0, anchor='w')
-        txt_input_quantity = tk.Spinbox(frame_add_change,font=('Arial', 14), from_=1, to=999999, width=8)
-        txt_input_quantity.pack(side='left', expand=1, anchor='w')
-        
-        lbl_un = tk.Label(frame_add_change,font=('Arial', 14), text="單價:", fg="black")
-        lbl_un.pack(side='left',expand=0, anchor='w')
-        txt_input_un = tk.Entry(frame_add_change,font=('Arial', 14), width=8)
-        txt_input_un.pack(side='left', expand=1, anchor='w')
-        
-        lbl_amount = tk.Label(frame_add_change,font=('Arial', 14), text="總價:", fg="black")
-        lbl_amount.pack(side='left',expand=0, anchor='w')
-        txt_input_amount = tk.Entry(frame_add_change,font=('Arial', 14), width=8)
-        txt_input_amount.pack(side='left', expand=1, anchor='w')
 
-        lbl_mark = tk.Label(frame_add_change,font=('Arial', 14), text="備註:", fg="black")
+        lbl_description = tk.Label(frame_add_change_item,font=('Arial', 14), text="品名:", fg="black")
+        lbl_description.pack(side='left',expand=0, anchor='w')
+        txt_input_description = tk.Entry(frame_add_change_item,font=('Arial', 14))
+        txt_input_description.pack(side='left', fill='x', expand=1, anchor='w')
+
+        num_item = tk.IntVar()
+        un_price = tk.IntVar()
+        total_price = tk.IntVar()
+
+        def auto_compute_total_price():
+            total_price.set(num_item.get()*un_price.get())
+            return True
+        
+        lbl_quantity = tk.Label(frame_add_change_item,font=('Arial', 14), text="數量:", fg="black")
+        lbl_quantity.pack(side='left',expand=0, anchor='w')
+        txt_input_quantity = tk.Spinbox(frame_add_change_item,font=('Arial', 14), from_=1, to=999999, width=8, 
+                                        textvariable=num_item, validate="focusout", validatecommand=auto_compute_total_price)
+        txt_input_quantity.pack(side='left', fill='x', expand=1, anchor='w')
+        
+        
+        lbl_un = tk.Label(frame_add_change_item,font=('Arial', 14), text="單價:", fg="black")
+        lbl_un.pack(side='left',expand=0, anchor='w')
+        txt_input_un = tk.Entry(frame_add_change_item,font=('Arial', 14), width=8,
+                                textvariable=un_price, validate="focusout", validatecommand=auto_compute_total_price)
+        txt_input_un.pack(side='left', fill='x', expand=1, anchor='w')
+
+        
+        lbl_amount = tk.Label(frame_add_change_item,font=('Arial', 14), text="總價:", fg="black")
+        lbl_amount.pack(side='left',expand=0, anchor='w')
+        txt_input_amount = tk.Entry(frame_add_change_item,font=('Arial', 14), width=8, textvariable=total_price)
+        txt_input_amount.pack(side='left', fill='x', expand=1, anchor='w')
+
+
+        lbl_mark = tk.Label(frame_add_change_item,font=('Arial', 14), text="備註:", fg="black")
         lbl_mark.pack(side='left',expand=0, anchor='w')
-        txt_input_mark = tk.Entry(frame_add_change,font=('Arial', 14))
-        txt_input_mark.pack(side='left', expand=1, anchor='w')
+        txt_input_mark = tk.Entry(frame_add_change_item,font=('Arial', 14))
+        txt_input_mark.pack(side='left', fill='x', expand=1, anchor='w')
     
     
     
@@ -601,11 +631,11 @@ class face1():
                 txt_input_amount.delete(0, 'end')
                 txt_input_mark.delete(0, 'end')
                 
-        btn_confirm = tk.Button(frame_add_change, text='新增資料', font=("Helvetica",18),fg='green', command=InputData)
-        btn_confirm.pack(ipadx=3, ipady=3,side='left', expand=1, anchor='w')
+        btn_confirm = tk.Button(frame_add_change_item, text='新增資料', font=("Helvetica",18),fg='green', command=InputData)
+        btn_confirm.pack(padx=5, ipadx=3, ipady=3,side='left', fill='x', expand=1, anchor='w')
       
-        btn_clear = tk.Button(frame_add_change, text='清除資料', font=("Helvetica",18), command=clearEntry)
-        btn_clear.pack(padx=5, ipadx=3, ipady=3,side='left', expand=1, anchor='w')
+        btn_clear = tk.Button(frame_add_change_item, text='清除資料', font=("Helvetica",18), command=clearEntry)
+        btn_clear.pack(padx=5, ipadx=3, ipady=3,side='left', fill='x', expand=1, anchor='w')
         
     def _page_add(self, ):
         self.initface.destroy()
